@@ -81,6 +81,80 @@ I also prepend the book and chapter title to the chunk before embedding to provi
 
 Why this approach? This is because novels are organized around chapters and paragraphs, which naturally represent scenes and ideas. Using paragraph-based chunks preserves context better than splitting text at fixed character counts. The 150-character overlap helps keep related events together and improves retrieval when characters are referenced by pronouns such as "he" or "she." Limiting chunks to about 800 characters also ensures they fit within the embedding model's input limits, making retrieval more accurate.
 
+# Sample Chunks
+==============================================================================
+SOURCE   Pride and Prejudice — Jane Austen
+CHAPTER  Chapter XX
+CHUNK    index 364 · 721 chars · dialogue-heavy Regency prose
+------------------------------------------------------------------------------
+I have much pleasure, indeed, in talking to anybody. People who suffer as I do from nervous complaints can have no great inclination for talking.
+
+Nobody can tell what I suffer! But it is always so. Those who do not complain are never pitied.”
+
+Her daughters listened in silence to this effusion, sensible that any attempt to reason with or soothe her would only increase the irritation. She talked on, therefore, without interruption from any of them till they were joined by Mr. Collins, who entered with an air more stately than usual, and on perceiving whom, she said to the girls,--
+
+“Now, I do insist upon it, that you, all of you, hold your tongues, and let Mr. Collins and me have a little conversation together.”
+
+==============================================================================
+SOURCE   The Art of War — Sun Tzu (translated by Lionel Giles)
+CHAPTER  Chapter VI: Weak Points and Strong
+CHUNK    index 47 · 736 chars · non-narrative numbered aphorisms
+------------------------------------------------------------------------------
+Rouse him, and learn the principle of his activity or inactivity.
+
+Force him to reveal himself, so as to find out his vulnerable spots.
+
+24. Carefully compare the opposing army with your own, so that you may know where strength is superabundant and where it is deficient.
+
+25. In making tactical dispositions, the highest pitch you can attain is to conceal them;
+
+conceal your dispositions, and you will be safe from the prying of the subtlest spies, from the machinations of the wisestbrains.
+
+26. How victory may be produced for them out of the enemy’s own tactics—that is what the multitude cannot comprehend.
+
+27. All men can see the tactics whereby I conquer, but what none can see is the strategy out of which victory is evolved.
+
+==============================================================================
+SOURCE   Dracula — Bram Stoker
+CHAPTER  Chapter XI: Lucy Westenra’s Diary
+CHUNK    index 531 · 769 chars · epistolary journal entry
+------------------------------------------------------------------------------
+for all you’re worth, and won’t git even a growl out of me. Drive along with your questions. I know what yer a-comin’ at, that ’ere escaped wolf.”
+
+“Exactly. I want you to give me your view of it. Just tell me how it happened; and when I know the facts I’ll get you to say what you consider was the cause of it, and how you think the whole affair will end.”
+
+“All right, guv’nor. This ’ere is about the ’ole story. That ’ere wolf what we called Bersicker was one of three grey onesthat came from Norway to Jamrach’s, which we bought off him four years ago. He was a nice well-behaved wolf, that never gave no trouble to talk of. I’m more surprised at ’im for wantin’ to get out nor any other animile in the place. But, there, you can’t trust wolves no more nor women.”
+
+==============================================================================
+SOURCE   Adventures of Huckleberry Finn — Mark Twain
+CHAPTER  Chapter XVII
+CHUNK    index 349 · 781 chars · phonetic vernacular dialect
+------------------------------------------------------------------------------
+tell him—oh, here he is himself. Buck, take this little stranger and get the wet clothes off from him and dress him up in some of yours that’s dry.”
+
+Buck looked about as old as me—thirteen or fourteen or along there, though he was a little bigger than me. He hadn’t on anything but a shirt, and he was very frowzy-headed. He came in gaping and digging one fist into his eyes, and he was dragging a gun along with the other one. He says:
+
+“Ain’t they no Shepherdsons around?”
+
+They said, no, ’twas a false alarm.
+
+“Well,” he says, “if they’d a ben some, I reckon I’d a got one.”
+
+They all laughed, and Bob says:
+
+“Why, Buck, they might have scalped us all, you’ve been so slow in coming.”
+
+“Well, nobody come after me, and it ain’t right I’m always kept down; I don’t get no show.”
+
+==============================================================================
+SOURCE   Moby-Dick; or, The Whale — Herman Melville
+CHAPTER  Chapter 42: The Whiteness of the Whale
+CHUNK    index 700 · 844 chars · long-form narrative and digression
+------------------------------------------------------------------------------
+at all approaching to muteness or universality. What I mean by these two statements may perhaps be respectively elucidatedby the following examples.
+
+First: The mariner, when drawing nigh the coasts of foreign lands, if by night he hear the roar of breakers, starts to vigilance, and feels just enough of trepidation to sharpen all his faculties; but under precisely similar circumstances, let him be called from his hammock to view his ship sailing through a midnight sea of milky whiteness—as if from encircling headlands shoals of combed white bears were swimming round him, then he feels a silent, superstitious dread; the shrouded phantom of the whitened waters is horrible to him as a real ghost; in vain the lead assures him he is still off soundings; heartand helm they both go down; he never rests till blue water is under him again.
+
 ## Retrieval Approach
 [Which embedding model are you using (e.g., all-MiniLM-L6-v2 via sentence-transformers)? How many chunks will you retrieve per query (top-k)? If you were deploying this for real users and cost wasn't a constraint, what tradeoffs would you weigh in choosing a different embedding model — context length, multilingual support, accuracy on domain-specific text, latency?]
 
