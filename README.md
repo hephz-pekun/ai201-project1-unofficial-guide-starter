@@ -6,20 +6,18 @@ A retrieval-augmented question answering system over ten public-domain classic b
 
 ## Domain
 
-**Passage-level recall across a personal library of ten classic books.**
+Passage-level recall across a library of ten classic books.
 
-This system answers the question a reader actually has weeks after finishing a book: *there was a scene where someone did something — where was it, and what happened?* You remember a character existed, or that a moment mattered, but not the words. Ctrl-F cannot help, because it needs the exact phrase you have forgotten. The alternative is rereading 130,000 words to find one paragraph.
+This project helps readers find specific scenes, events, or character moments from books even when they cannot remember the exact wording. Instead of rereading an entire novel, users can ask questions in their own words and quickly locate relevant passages.
 
-This knowledge is not secret, but it is **inaccessible**, and that is the gap the project fills. A published novel ships with a table of contents and nothing else: no index of events, no record of who did what to whom, no way to ask a question in the words you happen to remember. The official channels fail in specific ways:
+This information is valuable but difficult to access through traditional sources:
 
-- **Publishers** provide chapter numbers. There is no official "what happened in chapter 12" lookup for any book in this corpus.
-- **Search engines** answer only the famous questions. "Why does Elizabeth refuse Darcy?" is answerable; "the bit where the sister writes home about the officers" is not, because it was never notable enough for anyone to write about.
-- **Study guides** such as SparkNotes work at chapter-summary altitude. They confirm a plot beat existed; they cannot show the passage, quote what a character said, or tell you which of three similar scenes you are thinking of.
-- **Fan wikis** are spoiler-soaked by design and, for older literary fiction, thin or absent.
+Publishers provide only chapter lists, not searchable event indexes.
+Search engines usually answer only well-known questions, not obscure scenes.
+Study guides summarize plots but rarely provide the exact passage or details.
+Fan wikis are often incomplete or unavailable for older classics.
 
-The corpus deliberately spreads across authors, genres and centuries rather than staying in one series: Regency social comedy, detective short stories, gothic horror, American vernacular satire, a whaling epic and a classical military treatise. That tests something a single-series corpus cannot — whether retrieval can keep ten distinct worlds apart when several of them share vocabulary and register.
-
----
+The corpus includes ten public-domain books spanning multiple genres, such as romance, detective fiction, horror, adventure, satire, and military strategy. Using a diverse collection tests whether the retrieval system can accurately distinguish between different books, characters, and writing styles.
 
 ## Document Sources
 
@@ -47,7 +45,6 @@ The variety is deliberate. It tests whether the system can distinguish similar c
 **Chunk size:** 800 characters target, 1,000 hard maximum
 **Overlap:** 150 characters
 **Final chunk count:** **10,301 chunks** (mean 692 characters, longest 998)
-
 ### Preprocessing
 
 Five steps, all driven by things I found by inspecting the actual files rather than assuming.
@@ -87,7 +84,7 @@ Alice's Adventures in Wonderland — Chapter I: Down the Rabbit-Hole
 
 The prefixed version is what gets embedded; the bare passage is what gets stored and quoted, so the synthetic header never leaks into a citation.
 
-### Why these choices fit these documents
+**Why these choices fit these documents**
 
 **Why 800 characters.** The binding constraint is the embedding model, not the prose. `all-MiniLM-L6-v2` truncates at 256 word-pieces, roughly 1,000 characters of English. Anything past that is *silently* discarded at embedding time — still stored, still returned if retrieved, but contributing nothing to whether the chunk was findable. An 800-character target with a 1,000 cap keeps every chunk inside that window with headroom for the prefix. Narrative prose would prefer larger chunks, and accepting that ceiling has a real cost, discussed in the failure analysis.
 
@@ -126,10 +123,6 @@ I chose it because it is free, requires no API key, and embeds the whole corpus 
 If cost were not a constraint, **context length** is the tradeoff I would weigh first, because it is the constraint actively distorting this design. MiniLM's 256-token window is what forces 800-character chunks, and narrative prose does not divide into 800-character units. Scenes run longer, so the pipeline fragments them and then relies on overlap and a synthetic prefix to patch over the damage. This turned out to be the direct cause of my worst failure, described below: the passage answering a question sat eight to thirteen chunks away from the passage that matched it. An embedding model with an 8,000–32,000 token window, such as `voyage-3` or OpenAI's `text-embedding-3-large`, could hold an entire scene or chapter in one vector and would dissolve that problem rather than mitigate it.
 
 **Accuracy on domain-specific text** is second, and I measured it rather than guessing. MiniLM was trained on modern web text and question-answer pairs, and every source here is out of that distribution differently: Melville's cetology vocabulary, Austen's free indirect discourse, Twain's phonetic dialect where "sivilize" and "civilize" are different tokens, and Giles' romanised Chinese. I tested two stronger models on my hardest question. Where MiniLM ranked the answer-bearing chunks 109th, `all-mpnet-base-v2` ranked them 50th and `BAAI/bge-small-en-v1.5` 54th. Better, but not enough to matter at my token budget.
-
-**Latency and hosting** cut the other way, and are why MiniLM is right for this project: local inference is milliseconds per query, with no network round trip, no key, no per-token cost and no rate limit while iterating.
-
-**Multilingual support** is nearly irrelevant here since all ten sources are English. The exceptions — Moby-Dick's scattered French and Latin, and Sun Tzu's transliterated names — carry too little weight to justify a multilingual model.
 
 ---
 
@@ -413,6 +406,7 @@ with the diagnostic line: `Refused before calling the model: no passage scored b
 
 The number that matters more than the accuracy rate is this: **in no run, in any configuration, did the model invent an answer.** It demonstrably knows these novels — it could have produced a fluent, confident, uncited account of Elizabeth's reasons from training data. Instead it either refused or answered from what it was given. Retrieval is the weak component; grounding held under exactly the conditions that would expose a weak implementation.
 
+
 ---
 
 ## Failure Case Analysis
@@ -448,18 +442,30 @@ The fix that would actually work is the one the token budget forbids: an embeddi
 ---
 
 ## Spec Reflection
+One way the spec helped me during implementation
 
-**One way the spec helped me during implementation:**
+Defining specific requirements in planning.md before coding made testing straightforward. Target values such as chunk size limits and expected chapter counts helped me quickly identify several bugs in chapter detection and chunk generation that would have been difficult to spot by manually reviewing output.
 
-Writing concrete numbers into `planning.md` before writing code turned verification into something mechanical rather than a matter of opinion. Because the spec said 800 characters, 1,000 maximum, and a specific chapter count per book, I could assert those and catch four real bugs the moment I ran the pipeline: Pride and Prejudice found 59 of 61 chapters because my pattern was case-sensitive and missed `Chapter I.]`; then 60, because that heading lives inside an illustration caption my cleaning had deleted; A Tale of Two Cities found 24 of 45 because its chapter numbers restart in each of its three Books; and chunks came out at 1,001 characters because I had reserved the overlap budget but forgotten the two-character paragraph separator. None of those would have been visible by reading output and judging whether it "looked right."
+At the same time, some issues passed those checks. For example, chapter counts appeared correct even when parts of The Art of War were incorrectly processed. This showed that numerical checks alone are not enough, so I added validation for unusually short or unusually large chapters.
 
-The limits of that also became clear. My chapter-count check passed while the data was broken: when a bug removed the body headings for eight Art of War chapters, they silently fell back to their table-of-contents entries. The count still read 13. I only caught it by reading an actual chunk and finding a bibliography of Chinese commentators under the heading "The Attack by Fire." I have since added a check for chapters with almost no body text, and for one chapter that has swallowed far more than the others.
+One way my implementation diverged from the spec, and why
 
-**One way my implementation diverged from the spec, and why:**
+I originally planned to retrieve the top 5 chunks per query but increased this to 12. Testing showed that important passages for several evaluation questions ranked just outside the top five results, causing incorrect answers.
 
-I planned top-k of 5 and shipped 12. At 5, only 2 of my 5 evaluation questions could be answered, and all three failures were the same shape: the passage holding the answer had been retrieved reasonably well but sat just outside the window. Frankenstein Chapter 5 ranks 8th and Pride and Prejudice Chapter XXXIV ranks 12th, so a window of 5 excluded both.
+I also discovered that practical limits came from Groq's free-tier token restrictions rather than the model's maximum context window. To stay within those limits, I balanced retrieval size with token usage and added retry-with-backoff logic for evaluation runs.
 
-What I did not anticipate was where the ceiling on that number would come from. I assumed the model's 131,000-token context was the limit and started building toward whole-chapter retrieval, until the API rejected a request with a 413 at about 13,000 tokens. The real constraint is Groq's free tier: 8,000 tokens per minute. At roughly 215 tokens per passage, 12 passages plus the system prompt is about 3,000 tokens, which fits and leaves room to ask twice a minute. I also had to add retry-with-backoff, because running all five evaluation questions in sequence trips that limit. Both changes are recorded in `planning.md` as updates rather than silently applied.
+AI Usage
+
+I used Claude Code in VS Code throughout development, mainly because it could inspect the actual corpus files rather than relying only on my descriptions.
+
+Instance 1: Inspecting the corpus before implementing chunking
+Input: The ten Gutenberg text files and my draft chunking plan.
+Output: Claude identified duplicate table-of-contents entries, inconsistent chapter formats across books, and extensive editor commentary in The Art of War.
+What I changed: I added preprocessing steps to remove these issues and created book-specific chapter detection rules.
+Instance 2: Determining the retrieval threshold
+Input: My retrieval design, which specified a similarity threshold but not a specific value.
+Output: Claude generated a calibration process that compared in-scope and out-of-scope queries and measured similarity scores.
+What I changed: I selected a threshold based on the measured data rather than guessing. I also adopted a more evidence-based approach throughout the project, relying on tests and experiments instead of assumptions.
 
 ---
 
