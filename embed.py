@@ -24,12 +24,26 @@ import json
 import sys
 from pathlib import Path
 
+# Windows consoles default to cp1252 and cannot encode the corpus's curly
+# quotes and em dashes, which would raise UnicodeEncodeError when printing.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 CHUNKS_FILE = Path(__file__).parent / "chunks.json"
 CHROMA_DIR = Path(__file__).parent / "chroma_db"
 COLLECTION_NAME = "books"
 MODEL_NAME = "all-MiniLM-L6-v2"
 
-TOP_K = 5
+# Raised from the 5 originally specified in planning.md, after measurement.
+# At k=5 only 2 of the 5 evaluation questions could be answered; the passage
+# holding the answer was retrieved but sat outside the window. Frankenstein
+# chapter 5 ranks 8th and Pride and Prejudice chapter XXXIV ranks 12th, so a
+# window of 5 excluded both.
+#
+# The ceiling is Groq's free-tier limit of 8,000 tokens per minute, not the
+# model's 131k context. Each passage costs roughly 215 tokens, so k=12 plus the
+# system prompt is about 3,000 tokens and leaves room to ask twice a minute.
+TOP_K = 12
 # Cosine distance in Chroma is 1 - cosine_similarity, so smaller is closer and
 # the range is 0..2.
 #

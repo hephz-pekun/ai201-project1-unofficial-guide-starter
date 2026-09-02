@@ -3,9 +3,14 @@ chromadb>=0.6.0
 groq==0.15.0
 python-dotenv==1.0.1
 
-# Query interface — add whichever you use for Milestone 5:
-# gradio>=6.9.0
+# Query interface — Milestone 5
+gradio>=6.9.0
 # streamlit>=1.40.0
 
-# Document ingestion — add if your documents/ folder contains .pdf files:
+# Document ingestion — not needed; all ten sources are Gutenberg plain text.
 # pdfplumber==0.11.4
+
+# Installing gradio pulls huggingface-hub>=1.0, which the transformers version
+# shipped with sentence-transformers 3.4.1 refuses. Upgrading transformers
+# resolves the import error; pip still warns about the declared ceiling.
+transformers>=5.0

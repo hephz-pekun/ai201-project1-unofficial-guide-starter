@@ -15,6 +15,11 @@ import json
 import sys
 from pathlib import Path
 
+# Windows consoles default to cp1252 and cannot encode the corpus's curly
+# quotes and em dashes, which would raise UnicodeEncodeError when printing.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 CHUNKS_FILE = Path(__file__).parent / "chunks.json"
 
 # (book title prefix, why this book is here)

@@ -160,9 +160,17 @@ First: The mariner, when drawing nigh the coasts of foreign lands, if by night h
 
 Embedding model: all-MiniLM-L6-v2 from the sentence-transformers library.
 
-Top-k retrieval: 5 chunks per query, with a similarity threshold to filter out weak matches.
+Top-k retrieval: 12 chunks per query, with a distance threshold of 0.51 to filter out weak matches.
 
 Vector database: ChromaDB (chroma_db/).
+
+Update during implementation — why top-k changed from 5 to 12:
+ I originally planned to retrieve 5 chunks. When I ran my five evaluation questions, only 2 of them could be answered. The other 3 failed in the same way: the passage holding the answer existed and was ranked reasonably, but sat just outside a window of 5. Frankenstein chapter 5 ranks 8th and Pride and Prejudice chapter XXXIV ranks 12th, so a top-5 window excluded both. Raising the window to 12 brought them in.
+
+ The limit on how far I can raise it is not the model's context window, which is 131,000 tokens. It is Groq's free tier, which allows 8,000 tokens per minute. Each passage costs roughly 215 tokens, so 12 passages plus the system prompt comes to about 3,000 tokens per question. I tried retrieving whole chapters instead of chunks and the request was rejected with a 413 error at around 13,000 tokens, which is what told me where the real ceiling is.
+
+Update during implementation — how the 0.51 threshold was chosen:
+ I did not pick this number by guessing. I added a --calibrate mode to embed.py that runs my five evaluation questions alongside five clearly out-of-scope questions and prints the distance of the closest match for each. The in-scope questions scored between 0.214 and 0.337. The out-of-scope questions scored between 0.684 and 0.821. That leaves a clean gap of 0.348 with no overlap, and 0.51 sits in the middle of it. Because the two groups separate so cleanly, the system refuses out-of-scope questions before calling the language model at all.
 
 Why I chose it:
  I selected all-MiniLM-L6-v2 because it is free, runs locally on a CPU, and can efficiently embed the entire collection of about 9,200 text chunks. Retrieving the top 5 chunks provides enough context to answer questions accurately without overwhelming the language model with irrelevant passages. The similarity threshold also helps the system avoid answering questions that are not supported by the book collection.
