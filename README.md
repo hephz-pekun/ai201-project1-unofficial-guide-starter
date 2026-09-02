@@ -155,7 +155,7 @@ Top returned chunks:
 - `[0.365] The Art of War — Chapter IV: Tactical Dispositions` — "1. Sun Tzŭ said: The good fighters of old first put themselves beyond the possibility of defeat, and then waited for an opportunity of defeating the enemy…"
 - `[0.367] The Art of War — Chapter IV: Tactical Dispositions` — "…and balk his schemes, so that at last the day may be won without shedding a drop of blood…"
 
-Relevance explanation: partially relevant, and instructive about a weakness. All three are correctly from The Art of War and all concern concealment, secrecy and thwarting an enemy's plans. But the single most famous line on this subject — "All warfare is based on deception," in Chapter I — is *not* in the top three, despite existing in the corpus and containing the query's exact keyword. The retrieved passages are about the *practice* of deception rather than the *statement* about it, and the vector space cannot tell those apart. Note also the distances: 0.333 to 0.367 against 0.231 for the Dracula query, so the system is measurably less certain here.
+Relevance explanation: partially relevant, and instructive about a weakness. All three are correctly from The Art of War and all concern concealment, secrecy and thwarting an enemy's plans. But the single most famous line on this subject — "All warfare is based on deception," in Chapter I — is *not* in the top three, and I checked the full window: it is absent from the top **twelve** as well, despite existing in the corpus and containing the query's exact keyword. The retrieved passages are about the *practice* of deception rather than the *statement* about it, and the vector space cannot tell those apart. Note also the distances: 0.333 to 0.367 against 0.231 for the Dracula query, so the system is measurably less certain here.
 
 ---
 
@@ -339,14 +339,77 @@ All five questions from `planning.md`, run at top-k 12.
 
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | In *Pride and Prejudice*, why does Elizabeth reject Darcy's first proposal? | She believes he separated Bingley from Jane, treated Wickham unfairly, and proposed in a way that insulted her family | Answered, but said she refused because of "family weakness… the deepest disgrace." That phrase is from Chapter 46 and refers to Lydia's elopement — her *own* family, and a later event. None of her three actual reasons appeared | Off-target | **Inaccurate** |
+| 1 | In *Pride and Prejudice*, why does Elizabeth reject Darcy's first proposal? | She believes he separated Bingley from Jane, treated Wickham unfairly, and proposed in a way that insulted her family | Answered, but said she refused because of "family weakness… the deepest disgrace." Its citations lean on Chapter XLVI (Lydia's elopement — her *own* family, and a far later event). One of the three expected reasons survives; the other two never appear | Off-target | **Partially accurate** |
 | 2 | In *Frankenstein*, how does Victor react when the creature comes to life? | Horror rather than pride; he flees the room and abandons the creature | Answered correctly, quoting "the wretch—the miserable monster whom I had created," his escape downstairs, and the night in the courtyard "in the greatest agitation" | Relevant | Accurate |
 | 3 | Who is Irene Adler, and why is she important to Sherlock Holmes? | The adventuress who outwits Holmes in *A Scandal in Bohemia*; he calls her "*the* woman" | Answered correctly, identifying her as an adventuress in Holmes's index, quoting "always _the_ woman," and citing the photograph of the King of Bohemia | Relevant | Accurate |
 | 4 | Who is Renfield in *Dracula*? | Dr. Seward's asylum patient, zoophagous, psychically linked to Dracula | Answered correctly, drawing on four chapters — his shifting moods, "selfishness, secrecy, and purpose," eating his birds, his quiet spells | Relevant | Accurate |
-| 5 | Why does Huck decide not to betray Jim in *Huckleberry Finn*? | He tears up the letter to Miss Watson and chooses damnation over betraying Jim | **Refused** — "The retrieved passages don't contain the answer to that." Chapter XXXI *was* retrieved, but the chunk holding the decision was not | Partially relevant | — |
+| 5 | Why does Huck decide not to betray Jim in *Huckleberry Finn*? | He tears up the letter to Miss Watson and chooses damnation over betraying Jim | **Refused** — "The retrieved passages don't contain the answer to that." Chapter XXXI *was* retrieved, but the chunk holding the decision was not | Partially relevant | **Inaccurate** (no answer produced) |
 | — | *Out of scope:* What is the best pizza restaurant in Chicago? | Should refuse | Refused before any API call; closest distance 0.684 against a 0.51 threshold | n/a | Correct |
 
-**Result: 3 of 5 accurate, 1 inaccurate, 1 refused.**
+**Result: 3 accurate, 1 partially accurate, 1 inaccurate.** The out-of-scope query was correctly refused.
+
+Question 1 is judged partially accurate rather than inaccurate on a technicality worth being precise about. One of the three expected reasons — that Darcy proposed in a way insulting to her family — *is* present in the response, and is correct. But the system supports it with the wrong passage (Chapter 46, about Lydia's elopement, which happens hundreds of pages later and concerns Elizabeth's own family), and it misses the other two reasons entirely. Right conclusion, wrong evidence, incomplete.
+
+Question 5 is judged inaccurate because no answer was produced, even though the refusal was the *correct behaviour* given what retrieval supplied. Those are different things, and collapsing them would flatter the system. The pipeline stage that failed was retrieval, not generation.
+
+The number that matters more than the accuracy rate is this: **in no run, in any configuration, did the model invent an answer.** It demonstrably knows these novels — it could have produced a fluent, confident, uncited account of Elizabeth's reasons from training data. Instead it either refused or answered from what it was given. Retrieval is the weak component; grounding held under exactly the conditions that would expose a weak implementation.
+
+### Verbatim system responses
+
+Captured with `python app.py --ask "..."` at top-k 12, temperature 0. Sources blocks are as the system produced them.
+
+**Question 1 — In *Pride and Prejudice*, why does Elizabeth reject Darcy's first proposal?**
+
+> Elizabeth refuses Mr Darcy's first proposal because his declaration is accompanied by a harsh reminder of her family's disgrace, which she perceives as a proof of his pride and a humiliation of her relatives. She feels "everything must sink under such a proof of family weakness, such an assurance of the deepest disgrace" and cannot accept a marriage that is predicated on that contempt [8]. Her reaction to his offer is one of astonishment and disbelief, showing that she cannot reconcile his love with the insult to her family [12].
+>
+> Sources:
+> [8] Pride and Prejudice — Chapter XLVI
+> [12] Pride and Prejudice — Chapter XXXIV
+
+The citation is the tell. Passage [8] is Chapter XLVI, not the proposal chapter, and it is doing most of the work in the answer.
+
+**Question 2 — In *Frankenstein*, how does Victor react when the creature comes to life?**
+
+> Victor is horrified at the instant the creature awakens. He sees the "miserable monster" he has created, watches it lift the curtain and open its jaws, and then he "escaped and rushed downstairs." He takes refuge in the courtyard and spends the night "walking up and down in the greatest agitation, listening attentively, catching and fearing each sound as if it were to announce the approach of the demoniacal corpse" he has brought to life[8].
+>
+> Sources:
+> [8] Frankenstein; or, The Modern Prometheus — Chapter 5
+
+**Question 3 — Who is Irene Adler, and why is she important to Sherlock Holmes?**
+
+> Irene Adler is introduced in the case as "the well-known adventuress" who once crossed paths with Holmes during a long visit to Warsaw [2]. To Holmes she is "always _the_ woman… she eclipses and predominates the whole of her sex" and is the only female figure he ever mentions with such admiration [3]. Her importance to Holmes stems from the fact that she out-witted him and now holds a compromising photograph that could ruin the King of Bohemia, a situation that Holmes is forced to confront [4]; Holmes even refers to her repeatedly as "the woman" when recalling the episode [10].
+>
+> Sources:
+> [2] The Adventures of Sherlock Holmes — Chapter I: A Scandal in Bohemia
+> [3] The Adventures of Sherlock Holmes — Chapter I: A Scandal in Bohemia
+> [4] The Adventures of Sherlock Holmes — Chapter I: A Scandal in Bohemia
+> [10] The Adventures of Sherlock Holmes — Chapter I: A Scandal in Bohemia
+
+**Question 4 — Who is Renfield in *Dracula*?**
+
+> Renfield is the strange patient under Dr. Seward's care – a man whose moods swing wildly and who "does not really care for any of the things of mere earth…[he] was in the clouds" and "commanding destiny" ([1]). He is noted for a compulsive love of animals: he eats the birds he keeps, "disgorged a whole lot of feathers" and "has eaten his birds…raw" ([5]), and later spends his time "catching flies" and even humming while "spreading out his sugar…beginning his fly-catching again" ([10]). His behaviour alternates between violent outbursts and periods of quiet, "murmuring…'Now I can wait…'" ([6]) and, when confronted, he speaks cryptically about "flies…spiders" and stops at the word "drink" ([9]). He is also described as having "selfishness, secrecy, and purpose" and a "love of animals" that can appear "abnormally cruel" ([11]). In short, Renfield is Dr. Seward's disturbed, animal-obsessed patient.
+>
+> Sources:
+> [1] Dracula — Chapter XX: Jonathan Harker's Journal
+> [5] Dracula — Chapter VI: Mina Murray's Journal
+> [10] Dracula — Chapter VI: Mina Murray's Journal
+> [6] Dracula — Chapter IX: Mina Murray's Journal
+> [9] Dracula — Chapter XX: Jonathan Harker's Journal
+> [11] Dracula — Chapter VI: Mina Murray's Journal
+
+The best answer of the five, drawing on five chapters at once. This is the aggregation case I predicted would be hardest in `planning.md`, and it worked — because Renfield is *described* in the text in roughly the words someone would use to ask about him.
+
+**Question 5 — Why does Huck decide not to betray Jim in *Huckleberry Finn*?**
+
+> The retrieved passages don't contain the answer to that.
+
+**Out-of-scope — What is the best pizza restaurant in Chicago?**
+
+> That question doesn't appear to be covered by the ten books in this collection, so there are no relevant passages to answer from.
+>
+> The collection is: Pride and Prejudice, The Adventures of Sherlock Holmes, The Art of War, Alice's Adventures in Wonderland, Moby-Dick, Frankenstein, A Tale of Two Cities, The Picture of Dorian Gray, Dracula, and Adventures of Huckleberry Finn.
+
+with the diagnostic line: `Refused before calling the model: no passage scored below the 0.51 distance threshold (closest was 0.684).`
 
 The number that matters more than the accuracy rate is this: **in no run, in any configuration, did the model invent an answer.** It demonstrably knows these novels — it could have produced a fluent, confident, uncited account of Elizabeth's reasons from training data. Instead it either refused or answered from what it was given. Retrieval is the weak component; grounding held under exactly the conditions that would expose a weak implementation.
 
@@ -356,7 +419,7 @@ The number that matters more than the accuracy rate is this: **in no run, in any
 
 **Question that failed:** *In Pride and Prejudice, why does Elizabeth reject Darcy's first proposal?*
 
-**What the system returned:** A fluent, correctly-cited answer claiming Elizabeth refused because of "family weakness… the deepest disgrace." That phrasing comes from Chapter 46 and describes Lydia's elopement — a different event, several hundred pages later, concerning Elizabeth's own family rather than Darcy's. None of her three actual reasons appeared. Chapter XXXIV, where the proposal happens, ranked 12th; the chunks in which she states her reasons ranked **109th**.
+**What the system returned:** A fluent answer claiming Elizabeth refused because of "family weakness… the deepest disgrace." Its own citations give the failure away: it leans on passage `[8]`, which is Chapter **XLVI** — Lydia's elopement, several hundred pages later, concerning Elizabeth's own family rather than Darcy's — while Chapter XXXIV, where the proposal actually happens, appears only as `[12]` and contributes just her astonishment. One of her three real reasons (that his manner insulted her family) survives by coincidence, which is why this is graded partially accurate rather than inaccurate; the other two, Jane and Wickham, never appear. Chapter XXXIV ranked 12th, and the chunks in which she states her reasons ranked **109th**.
 
 **Root cause: questions are asked in summary vocabulary, and fiction is written in dramatic vocabulary.**
 

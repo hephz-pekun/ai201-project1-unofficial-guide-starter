@@ -108,7 +108,7 @@ Force him to reveal himself, so as to find out his vulnerable spots.
 
 25. In making tactical dispositions, the highest pitch you can attain is to conceal them;
 
-conceal your dispositions, and you will be safe from the prying of the subtlest spies, from the machinations of the wisestbrains.
+conceal your dispositions, and you will be safe from the prying of the subtlest spies, from the machinations of the wisest brains.
 
 26. How victory may be produced for them out of the enemy’s own tactics—that is what the multitude cannot comprehend.
 
@@ -123,7 +123,7 @@ for all you’re worth, and won’t git even a growl out of me. Drive along with
 
 “Exactly. I want you to give me your view of it. Just tell me how it happened; and when I know the facts I’ll get you to say what you consider was the cause of it, and how you think the whole affair will end.”
 
-“All right, guv’nor. This ’ere is about the ’ole story. That ’ere wolf what we called Bersicker was one of three grey onesthat came from Norway to Jamrach’s, which we bought off him four years ago. He was a nice well-behaved wolf, that never gave no trouble to talk of. I’m more surprised at ’im for wantin’ to get out nor any other animile in the place. But, there, you can’t trust wolves no more nor women.”
+“All right, guv’nor. This ’ere is about the ’ole story. That ’ere wolf what we called Bersicker was one of three grey ones that came from Norway to Jamrach’s, which we bought off him four years ago. He was a nice well-behaved wolf, that never gave no trouble to talk of. I’m more surprised at ’im for wantin’ to get out nor any other animile in the place. But, there, you can’t trust wolves no more nor women.”
 
 ==============================================================================
 SOURCE   Adventures of Huckleberry Finn — Mark Twain
@@ -151,9 +151,9 @@ SOURCE   Moby-Dick; or, The Whale — Herman Melville
 CHAPTER  Chapter 42: The Whiteness of the Whale
 CHUNK    index 700 · 844 chars · long-form narrative and digression
 ------------------------------------------------------------------------------
-at all approaching to muteness or universality. What I mean by these two statements may perhaps be respectively elucidatedby the following examples.
+at all approaching to muteness or universality. What I mean by these two statements may perhaps be respectively elucidated by the following examples.
 
-First: The mariner, when drawing nigh the coasts of foreign lands, if by night he hear the roar of breakers, starts to vigilance, and feels just enough of trepidation to sharpen all his faculties; but under precisely similar circumstances, let him be called from his hammock to view his ship sailing through a midnight sea of milky whiteness—as if from encircling headlands shoals of combed white bears were swimming round him, then he feels a silent, superstitious dread; the shrouded phantom of the whitened waters is horrible to him as a real ghost; in vain the lead assures him he is still off soundings; heartand helm they both go down; he never rests till blue water is under him again.
+First: The mariner, when drawing nigh the coasts of foreign lands, if by night he hear the roar of breakers, starts to vigilance, and feels just enough of trepidation to sharpen all his faculties; but under precisely similar circumstances, let him be called from his hammock to view his ship sailing through a midnight sea of milky whiteness—as if from encircling headlands shoals of combed white bears were swimming round him, then he feels a silent, superstitious dread; the shrouded phantom of the whitened waters is horrible to him as a real ghost; in vain the lead assures him he is still off soundings; heart and helm they both go down; he never rests till blue water is under him again.
 
 ## Retrieval Approach
 [Which embedding model are you using (e.g., all-MiniLM-L6-v2 via sentence-transformers)? How many chunks will you retrieve per query (top-k)? If you were deploying this for real users and cost wasn't a constraint, what tradeoffs would you weigh in choosing a different embedding model — context length, multilingual support, accuracy on domain-specific text, latency?]
@@ -173,7 +173,7 @@ Update during implementation — how the 0.51 threshold was chosen:
  I did not pick this number by guessing. I added a --calibrate mode to embed.py that runs my five evaluation questions alongside five clearly out-of-scope questions and prints the distance of the closest match for each. The in-scope questions scored between 0.214 and 0.337. The out-of-scope questions scored between 0.684 and 0.821. That leaves a clean gap of 0.348 with no overlap, and 0.51 sits in the middle of it. Because the two groups separate so cleanly, the system refuses out-of-scope questions before calling the language model at all.
 
 Why I chose it:
- I selected all-MiniLM-L6-v2 because it is free, runs locally on a CPU, and can efficiently embed the entire collection of about 9,200 text chunks. Retrieving the top 5 chunks provides enough context to answer questions accurately without overwhelming the language model with irrelevant passages. The similarity threshold also helps the system avoid answering questions that are not supported by the book collection.
+ I selected all-MiniLM-L6-v2 because it is free, runs locally on a CPU, and can efficiently embed the entire collection, which came to 10,301 text chunks. Retrieving the top 12 chunks provides enough context to answer questions accurately without overwhelming the language model with irrelevant passages. The distance threshold also helps the system avoid answering questions that are not supported by the book collection.
 
 Tradeoffs for a production system:
  If cost were not a concern, I would primarily consider:
@@ -261,7 +261,7 @@ Querying Phase
 ```mermaid
 flowchart LR
     A[User Question] --> B[Embed Query<br/>all-MiniLM-L6-v2]
-    B --> C[Retrieve Top 5 Chunks<br/>ChromaDB]
+    B --> C[Retrieve Top 12 Chunks<br/>ChromaDB]
     C --> D[Generate Answer<br/>openai/gpt-oss-120b via Groq]
     D --> E[Answer with Source Citation]
 ```
@@ -278,7 +278,7 @@ Tools Used
 | Generation | `openai/gpt-oss-120b` via Groq API |
 | Interface | Gradio |
 
-Overview: The books are cleaned, split into chunks, embedded, and stored in ChromaDB. When a user asks a question, the question is embedded, the top 5 relevant chunks are retrieved, and `openai/gpt-oss-120b` generates an answer using only those retrieved passages, along with the book and chapter source information.
+Overview: The books are cleaned, split into chunks, embedded, and stored in ChromaDB. When a user asks a question, the question is embedded, the top 12 relevant chunks are retrieved, and `openai/gpt-oss-120b` generates an answer using only those retrieved passages, along with the book and chapter source information.
 
 ## AI Tool Plan
 [Which parts of the pipeline do you plan to use AI tools (Claude, Copilot, ChatGPT, etc.) to help you implement? For each part, describe what you'll give the AI as input — which sections of this planning.md, which requirements from the instructions — and what you expect it to produce. Be specific: "I'll prompt Claude with my chunking strategy section and ask it to implement the chunk_text() function" is a plan. "I'll use AI to help me code" is not.]
