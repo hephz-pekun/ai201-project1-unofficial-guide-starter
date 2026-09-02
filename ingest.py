@@ -421,6 +421,15 @@ def ingest_book(config: BookConfig) -> tuple[list[Chunk], list[Chapter]]:
     text = _ILLUSTRATION.sub(" ", text)
     if config.strip_brackets:
         # The Giles edition interleaves ~45% commentary in square brackets.
+        # This single pass removes brackets containing no nested brackets,
+        # which clears most of it and leaves roughly 19% of the remaining text
+        # still annotated - see the failure analysis in README.md.
+        #
+        # Deliberately NOT applied repeatedly to peel nested pairs. The file
+        # contains unbalanced brackets, so a second pass starts matching from
+        # a stray opener across real treatise text and swallowed the chapter
+        # headings for chapters V-XII, which then silently anchored to their
+        # table-of-contents entries instead of their bodies.
         text = _BRACKETED.sub(" ", text)
 
     chapters = find_chapters(text, config)
@@ -471,6 +480,30 @@ def main() -> None:
             )
         if longest > MAX_CHARS:
             problems.append(f"{config.title}: chunk of {longest} chars exceeds {MAX_CHARS}")
+
+        # A correct chapter count is not proof the chapters are real. When a
+        # body heading goes missing, that chapter silently falls back to its
+        # table-of-contents entry: the count still matches, but the chapter
+        # spans a few characters of TOC while its neighbour absorbs everything
+        # up to the next real heading. Catch both shapes.
+        sizes = sorted(len(chapter.text) for chapter in chapters)
+        if sizes:
+            median = sizes[len(sizes) // 2]
+            # Two or more, not one: Moby-Dick chapter 122 is legitimately a
+            # few lines long, whereas a heading-resolution failure strands a
+            # whole run of chapters at once.
+            stubs = [c.label for c in chapters if len(c.text) < 400]
+            if len(stubs) >= 2:
+                problems.append(
+                    f"{config.title}: {len(stubs)} chapter(s) have almost no body text "
+                    f"({', '.join(stubs[:4])}) — headings probably resolved to the "
+                    f"table of contents"
+                )
+            if median and sizes[-1] > 8 * median:
+                problems.append(
+                    f"{config.title}: longest chapter is {sizes[-1] // median}x the median "
+                    f"length — it has probably absorbed front matter"
+                )
 
         print(
             f"{config.title[:40]:<42}{len(chapters):>10}{config.expected_chapters:>10}"

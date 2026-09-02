@@ -236,7 +236,9 @@ def launch() -> None:
                 lines=2,
                 scale=4,
             )
-            k = gr.Slider(1, 10, value=TOP_K, step=1,
+            # Upper bound is 20, not 12: about 215 tokens per passage against
+            # Groq's 8,000 tokens-per-minute free tier leaves headroom there.
+            k = gr.Slider(1, 20, value=TOP_K, step=1,
                           label="Passages to retrieve", scale=1)
         ask = gr.Button("Ask", variant="primary")
         reply = gr.Textbox(label="Answer", lines=8)
